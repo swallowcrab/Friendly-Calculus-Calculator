@@ -32,7 +32,21 @@ class refract:
         
         return border_pos
             
+    def intensity(self, st_ang, st_val, n1, n2):  #프레넬 방정식에서 반사율과 투과율을 계산해줌; 이건 투과율
+        n = n2 / n1 # 상대굴절률
+        fi_angle = n ** 2 - (math.sin(st_ang)) ** 2
+        
+        if fi_angle > 0:
+            cos_fi_ang = math.sqrt(fi_angle) #cos(fi_ang)의 값
+            R_swave = (math.cos(st_ang) - cos_fi_ang) / (math.cos(st_ang) + cos_fi_ang)
+            R_pwave = (n * n * math.cos(st_ang) - cos_fi_ang) / (n * n * math.cos(st_ang) + cos_fi_ang)
+            return 1 - abs(R_swave * R_pwave)
+        return 1
     
+    def dividedlight(self, st_ang, st_vel, n1, n2):   #반사된 빛의 경로, 근데 코드력의 한계로 못넣었음, 재우가 해결해 줄 것이라 믿고있음
+        T_sp=1-self.intensity
+        return st_vel, st_ang, -1, T_sp
+        
     def speed_check(self, speed):
         time_check = 0
         timer = 0
@@ -68,7 +82,8 @@ class refract:
             temp_height += self.data[layer][1]
 
         self.light = sphere(pos = vector((-1) * self.length/2, self.thick /2, 5), 
-                    size = vector(1,1,1), color = vector(1,1,0), make_trail=True)
+                    size = vector(1,1,1), color = vector(1,1,0), make_trail=True, opacity = 1,
+                           trail_radius = 1e-1)
         
         
     def move(self, vel, border_pos):
@@ -96,6 +111,9 @@ class refract:
                     break
                     
             if temp != 'None' and float_value_adj != temp:
+                self.light.opacity *= self.intensity(ang, vel, self.data[int(temp +(1-direc)/2)][0], self.data[int(temp+(direc+1)//2)][0])
+                self.light.trail_radius *= self.intensity(ang, vel, self.data[int(temp +(1-direc)/2)][0], self.data[int(temp+(direc+1)//2)][0])
+                #원래 반사된 빛의 궤도도 넣으려 했으나 좀 빡셀 것 같아서 안넣었음
                 vel, ang, direc = self.angle_ref(ang, vel, self.data[int(temp +(1-direc)/2)][0], self.data[int(temp+(direc+1)//2)][0])
                 
                 float_value_adj = temp
@@ -128,7 +146,6 @@ class refract:
         
         self.move(vel, self.border())
         
-  
         
 a = refract()
 a.activate()
